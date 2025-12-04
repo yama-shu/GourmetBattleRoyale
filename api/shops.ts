@@ -3,17 +3,15 @@ import type { IncomingMessage, ServerResponse } from 'http';
 import fetch from 'node-fetch'; 
 
 // --- 型定義 ---
-
-// 取得するデータの構造を定義 (TypeScriptの警告を解消するため)
 interface ShopResult {
   results: {
-    shop: any[]; // Hotpepper APIの shop 配列をシンプルに定義
+    shop: any[]; 
   };
 }
 
 // Node.jsのRequest/Responseの型を Vercelの関数に適用
 export default async (request: IncomingMessage, response: ServerResponse) => {
-  // TypeScriptの厳格な型チェックを避けるため、any型にキャストし、Vエリファイを簡易化します
+  // TypeScriptの厳格な型チェックを避けるため、any型にキャスト
   const req = request as any;
   const res = response as any;
   
@@ -23,13 +21,12 @@ export default async (request: IncomingMessage, response: ServerResponse) => {
     return res.status(500).json({ error: 'API key not configured' });
   }
 
-  // 2. クエリパラメータ（検索条件）を取得
+  // 2. クエリパラメータ（検索条件）を取得 (Node.jsのURLオブジェクトを使用)
   const url = new URL(req.url || '', `http://${req.headers.host}`);
   const keyword = url.searchParams.get('keyword');
   const genre = url.searchParams.get('genre');
   const count = url.searchParams.get('count') || '10';
 
-  // 必須パラメータのチェック
   if (!keyword) {
     return res.status(400).json({ error: 'Keyword is required' });
   }
@@ -53,7 +50,7 @@ export default async (request: IncomingMessage, response: ServerResponse) => {
         return res.status(apiResponse.status).json({ error: 'Failed to fetch external API' });
     }
     
-    // 取得したJSONデータを明示的にShopResult型として扱う (警告解消)
+    // 取得したJSONデータを明示的にShopResult型として扱う (unknown警告解消)
     const data: ShopResult = await apiResponse.json() as ShopResult; 
     
     if (!data.results || !data.results.shop) {
