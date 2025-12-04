@@ -1,5 +1,6 @@
-export type GameState = 'LOBBY' | 'WAITING' | 'PLAY' | 'GAME_OVER'; // LOBBYとWAITINGを追加
+export type GameState = 'LOBBY' | 'WAITING' | 'PLAY' | 'GAME_OVER';
 export type QuestionType = 'TEXT' | 'COLOR';
+export type PlayerRole = 'HOST' | 'GUEST';
 
 export type ColorDefinition = {
   id: string;
@@ -7,26 +8,36 @@ export type ColorDefinition = {
   hex: string;
 };
 
-export interface Question {
+export interface Question { // ★このインターフェースが正しくexportされます
   text: ColorDefinition;
   color: ColorDefinition;
   type: QuestionType;
 }
 
-// 通信対戦用の型定義
-export type PlayerRole = 'HOST' | 'GUEST';
+// --- 拡張した型 ---
+export interface Shop {
+  id: string;
+  name: string;
+  url: string;
+  photoUrl: string;
+  genre: string;
+}
 
 export interface Player {
   name: string;
   score: number;
   combo: number;
-  alive: boolean; // ゲームオーバーになっていないか
+  alive: boolean;
+  selectedShopId: string | null;
 }
 
 export interface RoomData {
   status: 'WAITING' | 'PLAY' | 'FINISHED';
+  gameType: 'COLOR_MATCH'; 
   players: {
-    [key: string]: Player; // "host" または "guest" というキーでプレイヤー情報を保存
+    [key: string]: Player;
   };
-  startTime?: number; // ゲーム開始時刻（同期用）
+  shopCandidates: Shop[];
+  winnerSelectionId: string | null;
+  startTime?: number; 
 }
