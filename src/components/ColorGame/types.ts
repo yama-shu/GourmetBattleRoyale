@@ -40,4 +40,4 @@ export interface RoomData {
   shopCandidates: Shop[];
   winnerSelectionId: string | null;
   startTime?: number; 
-}
+}　
