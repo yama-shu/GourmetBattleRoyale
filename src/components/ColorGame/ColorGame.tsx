@@ -35,7 +35,6 @@ const ColorGame: React.FC = () => {
   const [opponentAlive, setOpponentAlive] = useState(true);
   
   // 勝者の店情報
-  const [winnerShop, setWinnerShop] = useState<Shop | null>(null);
   const [shopCandidates, setShopCandidates] = useState<Shop[]>([]); // 全員の候補
 
   // 1. 部屋に参加 / 作成 (Shop引数を追加)
