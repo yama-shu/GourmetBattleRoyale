@@ -1,168 +1,174 @@
 import React, { useState } from 'react';
-import { Search, MapPin, Navigation, Store } from 'lucide-react';
-import type { Shop } from '../../types';
+import { Search, MapPin, Store, Utensils } from 'lucide-react';
+
+export interface Shop {
+  id: string;
+  name: string;
+  url: string;
+  photoUrl: string;
+  genre: string;
+  address: string;
+  lat?: number;
+  lng?: number;
+}
+
+// ジャンルリスト
+const GENRES = [
+  { code: 'G001', name: '居酒屋', icon: '🍺' },
+  { code: 'G008', name: '焼肉', icon: '🥩' },
+  { code: 'G004', name: '和食', icon: '🍣' },
+  { code: 'G013', name: 'ラーメン', icon: '🍜' },
+  { code: 'G006', name: 'イタリアン', icon: '🍝' },
+  { code: 'G007', name: '中華', icon: '🥟' },
+  { code: 'G014', name: 'カフェ', icon: '🍰' },
+];
 
 interface Props {
   onConfirm: (shop: Shop) => void;
 }
 
 export const RestaurantSelector: React.FC<Props> = ({ onConfirm }) => {
+  const [location, setLocation] = useState('');
   const [keyword, setKeyword] = useState('');
+  const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
   const [shops, setShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searched, setSearched] = useState(false); // 検索したかどうか
+  const [searched, setSearched] = useState(false);
 
-  // 現在地取得して検索
-  const handleUseCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      alert("お使いのブラウザでは位置情報が使えません");
+  const handleSearch = async (genreCode?: string) => {
+    if (!location && !keyword && !genreCode && !selectedGenre) {
+      alert("場所かキーワードを入力してください");
       return;
     }
-    setLoading(true);
-    setSearched(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        searchShops(undefined, latitude, longitude);
-      },
-      (err) => {
-        console.error(err);
-        alert("位置情報の取得に失敗しました");
-        setLoading(false);
-      }
-    );
-  };
 
-  // 検索実行
-  const searchShops = async (searchKeyword?: string, lat?: number, lng?: number) => {
     setLoading(true);
     setSearched(true);
+    setShops([]); 
+
     try {
-      // 検索範囲は広め(range=5: 3000m)に設定
-      let query = `/api/shops?count=20&range=5`;
-      
-      if (searchKeyword) {
-        query += `&keyword=${encodeURIComponent(searchKeyword)}`;
-      }
-      if (lat && lng) {
-        query += `&lat=${lat}&lng=${lng}`;
-      }
+      const searchTerms = [location, keyword].filter(Boolean).join(' ');
+      const queryParams = new URLSearchParams();
+      queryParams.set('count', '30'); 
+      if (searchTerms) queryParams.set('keyword', searchTerms);
 
-      const res = await fetch(query);
-      if (!res.ok) throw new Error('API Error');
-      
+      const genre = genreCode || selectedGenre;
+      if (genre) queryParams.set('genre', genre);
+
+      const res = await fetch(`/api/shops?${queryParams.toString()}`);
       const data = await res.json();
-      if (data.shops) {
-        setShops(data.shops);
-      } else {
-        setShops([]);
+      let results: Shop[] = data.shops || [];
+
+      if (location && results.length > 0) {
+        results = results.filter(shop => {
+           return shop.address ? shop.address.indexOf(location) !== -1 : true;
+        });
       }
+      setShops(results);
     } catch (error) {
       console.error(error);
-      alert('検索に失敗しました。ローカル環境の場合は "vercel dev" コマンドが必要です。');
+      alert('検索に失敗しました');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleGenreClick = (code: string) => {
+    const newGenre = selectedGenre === code ? null : code;
+    setSelectedGenre(newGenre);
+    handleSearch(newGenre || undefined);
+  };
+
   return (
     <div className="flex flex-col h-screen bg-slate-50">
-      {/* ヘッダーエリア */}
-      <div className="bg-white shadow-sm p-4 z-10">
-        <div className="max-w-4xl mx-auto w-full space-y-3">
-          <h2 className="font-bold text-slate-700 flex items-center gap-2 text-lg">
-            <Store className="text-orange-500" /> 行きたいお店を決める
-          </h2>
-          
-          <div className="flex gap-2">
+      <div className="bg-white p-4 shadow-sm space-y-4">
+        <h2 className="font-bold text-slate-700 flex items-center gap-2">
+          <Utensils className="text-orange-500" /> お店を決める
+        </h2>
+
+        <div className="flex flex-col gap-3">
+          <div className="relative">
+            <MapPin className="absolute left-3 top-3 text-slate-400" size={20} />
+            <input 
+              type="text" 
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="場所 (例: 梅田, 新宿)"
+              className="w-full pl-10 p-3 bg-slate-100 rounded-xl font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <div className="relative">
+            <Store className="absolute left-3 top-3 text-slate-400" size={20} />
             <input 
               type="text" 
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
-              placeholder="場所・店名 (例: 梅田 焼肉)"
-              className="flex-1 p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-indigo-500 transition-all outline-none"
-              onKeyDown={(e) => e.key === 'Enter' && searchShops(keyword)}
+              placeholder="店名・キーワード (例: 焼肉, 個室)"
+              className="w-full pl-10 p-3 bg-slate-100 rounded-xl font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
-            <button 
-              onClick={() => searchShops(keyword)}
-              className="bg-indigo-600 text-white p-3 rounded-xl font-bold shadow-sm hover:bg-indigo-700 active:scale-95 transition-all"
-            >
-              <Search />
-            </button>
           </div>
-          
-          <button 
-            onClick={handleUseCurrentLocation}
-            className="text-indigo-600 text-sm font-bold flex items-center gap-1 hover:underline px-1"
-          >
-            <Navigation size={14} /> 現在地周辺のお店を探す
-          </button>
         </div>
-      </div>
 
-      {/* コンテンツエリア */}
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className="max-w-4xl mx-auto">
-          
-          {loading && (
-            <div className="text-center py-20 text-slate-400 font-bold animate-pulse">
-              お店を探しています...
-            </div>
-          )}
-
-          {!loading && searched && shops.length === 0 && (
-            <div className="text-center py-20 text-slate-400">
-              <p>お店が見つかりませんでした。</p>
-              <p className="text-sm mt-2">条件を変えて検索してみてください。</p>
-            </div>
-          )}
-
-          {/* 検索結果一覧 (グリッド表示) */}
-          {/* モバイル: 2列 (grid-cols-2) / PC: 4列 (md:grid-cols-4) */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pb-20">
-            {shops.map((shop) => (
-              <div 
-                key={shop.id} 
-                className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md hover:-translate-y-1 transition-all flex flex-col h-full"
+        <div className="overflow-x-auto whitespace-nowrap scrollbar-hide -mx-4 px-4">
+          <div className="flex gap-2 pb-2">
+            {GENRES.map((g) => (
+              <button
+                key={g.code}
+                onClick={() => handleGenreClick(g.code)}
+                className={`px-4 py-2 rounded-full text-sm font-bold border transition-colors
+                  ${selectedGenre === g.code 
+                    ? 'bg-orange-500 text-white border-orange-600' 
+                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                  }`}
               >
-                {/* 写真 */}
-                <div className="aspect-video w-full bg-slate-100 relative">
-                  <img 
-                    src={shop.photoUrl} 
-                    alt={shop.name} 
-                    className="w-full h-full object-cover"
-                    loading="lazy" 
-                  />
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
-                    <span className="text-white text-xs font-bold bg-black/30 px-2 py-0.5 rounded-full backdrop-blur-sm">
-                      {shop.genre}
-                    </span>
-                  </div>
-                </div>
-
-                {/* 情報 */}
-                <div className="p-3 flex flex-col flex-1">
-                  <h3 className="font-bold text-slate-800 text-sm line-clamp-2 mb-1 leading-tight">
-                    {shop.name}
-                  </h3>
-                  <p className="text-xs text-slate-400 mb-3 line-clamp-1">
-                    <MapPin size={10} className="inline mr-0.5" />
-                    {shop.address}
-                  </p>
-                  
-                  <div className="mt-auto">
-                    <button 
-                      onClick={() => onConfirm(shop)}
-                      className="w-full bg-orange-50 text-orange-600 border border-orange-200 py-2 rounded-lg text-sm font-bold hover:bg-orange-500 hover:text-white transition-colors"
-                    >
-                      この店にする
-                    </button>
-                  </div>
-                </div>
-              </div>
+                {g.icon} {g.name}
+              </button>
             ))}
           </div>
         </div>
+
+        <button 
+          onClick={() => handleSearch()}
+          disabled={loading}
+          className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold shadow-md hover:bg-indigo-700 active:scale-95 transition-transform flex justify-center items-center gap-2"
+        >
+          {loading ? (
+             <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></span>
+          ) : (
+             <><Search size={20} /> 検索する</>
+          )}
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {shops.map((shop) => (
+          <div key={shop.id} className="bg-white p-3 rounded-xl shadow-sm border border-slate-100 flex gap-4">
+            <img src={shop.photoUrl} alt={shop.name} className="w-24 h-24 object-cover rounded-lg bg-slate-200" />
+            <div className="flex-1 flex flex-col justify-between">
+              <div>
+                <p className="text-xs text-orange-500 font-bold mb-1">{shop.genre}</p>
+                <h3 className="font-bold text-slate-800 leading-tight mb-1">{shop.name}</h3>
+                <p className="text-xs text-slate-400 line-clamp-1">{shop.address}</p>
+              </div>
+              <button 
+                onClick={() => onConfirm(shop)}
+                className="mt-2 w-full bg-slate-800 text-white py-2 rounded-lg text-sm font-bold hover:bg-slate-700"
+              >
+                このお店にする
+              </button>
+            </div>
+          </div>
+        ))}
+        {!loading && searched && shops.length === 0 && (
+          <div className="text-center text-slate-400 mt-10">
+            <p>お店が見つかりませんでした。</p>
+          </div>
+        )}
+        {!searched && (
+          <div className="text-center text-slate-300 mt-10">
+            <Search size={48} className="mx-auto mb-2 opacity-20" />
+            <p>行きたい場所と食べたいものを<br/>入力してください</p>
+          </div>
+        )}
       </div>
     </div>
   );

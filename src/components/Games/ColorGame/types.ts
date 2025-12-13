@@ -1,6 +1,3 @@
-// ★共通の型を読み込む
-import type { Shop } from '../../../types'; 
-
 export type GameState = 'LOBBY' | 'WAITING' | 'PLAY' | 'GAME_OVER';
 export type QuestionType = 'TEXT' | 'COLOR';
 export type PlayerRole = 'HOST' | 'GUEST';
@@ -17,7 +14,17 @@ export interface Question {
   type: QuestionType;
 }
 
-// Playerはゲームごとに固有のスコアなどを持つので、ここで拡張して定義
+export interface Shop {  
+  id: string;
+  name: string;
+  url: string;
+  photoUrl: string;
+  genre: string;
+  address: string; 
+  lat?: number;
+  lng?: number;
+}
+
 export interface Player {
   name: string;
   score: number;
@@ -32,7 +39,7 @@ export interface RoomData {
   players: {
     [key: string]: Player;
   };
-  shopCandidates: Shop[]; // ★共通のShop型を使用
+  shopCandidates: Shop[];
   winnerSelectionId: string | null;
   startTime?: number; 
 }
