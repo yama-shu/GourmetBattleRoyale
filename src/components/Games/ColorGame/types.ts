@@ -1,6 +1,6 @@
 export type GameState = 'LOBBY' | 'WAITING' | 'PLAY' | 'GAME_OVER';
 export type QuestionType = 'TEXT' | 'COLOR';
-export type PlayerRole = 'HOST' | 'GUEST'; 
+export type PlayerRole = 'HOST' | 'GUEST';
 
 export type ColorDefinition = {
   id: string;
@@ -8,19 +8,21 @@ export type ColorDefinition = {
   hex: string;
 };
 
-export interface Question { 
+export interface Question {
   text: ColorDefinition;
   color: ColorDefinition;
   type: QuestionType;
 }
 
-// 拡張した型
-export interface Shop {
+export interface Shop {  
   id: string;
   name: string;
   url: string;
   photoUrl: string;
   genre: string;
+  address?: string; 
+  lat?: number;
+  lng?: number;
 }
 
 export interface Player {
