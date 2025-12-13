@@ -20,7 +20,7 @@ export interface Shop {
   url: string;
   photoUrl: string;
   genre: string;
-  address?: string; 
+  address: string; 
   lat?: number;
   lng?: number;
 }
