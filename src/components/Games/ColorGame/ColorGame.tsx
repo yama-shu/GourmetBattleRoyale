@@ -3,7 +3,6 @@ import { db } from '../../../firebase';
 import { ref, set, onValue, update, get } from 'firebase/database';
 
 import { COLORS, GAME_DURATION, TIME_BONUS } from './constants';
-// ↓パスなどはあなたのコードをそのまま採用しています
 import type { Shop } from '../../../types'; 
 import type { GameState, Question, QuestionType, PlayerRole, RoomData, Player } from './types';
 import { PlayScreen } from './PlayScreen';
@@ -15,7 +14,7 @@ import './ColorGame.css';
 // --- Props定義 ---
 interface Props {
   shop: Shop | null;
-  onGameEnd: () => void; // 修正: App.tsxに合わせて 'onBack' を 'onGameEnd' に変更
+  onGameEnd: () => void;
 }
 
 // --- ユーティリティ ---
@@ -30,7 +29,6 @@ const generateQuestion = (): Question => {
 };
 
 // --- メインコンポーネント ---
-// 修正: export const に変更し、受け取るPropsを onGameEnd に変更
 export const ColorGame: React.FC<Props> = ({ shop, onGameEnd }) => {
   // Game State
   const [gameState, setGameState] = useState<GameState>('LOBBY');
@@ -52,7 +50,6 @@ export const ColorGame: React.FC<Props> = ({ shop, onGameEnd }) => {
   // Shop Data
   const [shopCandidates, setShopCandidates] = useState<Shop[]>([]);
 
-  // --- Firebase Logic ---
 
   // 1. 部屋に参加 / 作成
   const joinRoom = async (name: string, id: string, role: PlayerRole) => {
@@ -109,6 +106,14 @@ export const ColorGame: React.FC<Props> = ({ shop, onGameEnd }) => {
     }
   };
 
+  const startGameLocal = () => {
+    setScore(0);
+    setCombo(0);
+    setTimeLeft(GAME_DURATION);
+    setQuestion(generateQuestion());
+    setGameState('PLAY');
+  };
+
   // 2. 部屋の状態を監視
   useEffect(() => {
     if (!roomId || !myRole) return;
@@ -154,16 +159,7 @@ export const ColorGame: React.FC<Props> = ({ shop, onGameEnd }) => {
     });
   };
 
-  // --- Game Logic ---
-
-  const startGameLocal = () => {
-    setScore(0);
-    setCombo(0);
-    setTimeLeft(GAME_DURATION);
-    setQuestion(generateQuestion());
-    setGameState('PLAY');
-  };
-
+  // --- ゲームロジック ---
   const handleHostStartGame = () => {
     if (roomId) {
       update(ref(db, `rooms/${roomId}`), { status: 'PLAY' });
